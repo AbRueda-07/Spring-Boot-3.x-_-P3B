@@ -1,6 +1,6 @@
 package com.ejemplo.demo.api.controller;
 
-import com.ejemplo.demo.api.dto.SaludoRequest;
+import com.ejemplo.demo.generated.model.SaludoRequest;
 import com.ejemplo.demo.api.exception.GlobalExceptionHandler;
 import com.ejemplo.demo.domain.service.SaludoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(SaludoController.class)
+@WebMvcTest(SaludoApiController.class)
 @Import({SaludoService.class, GlobalExceptionHandler.class})
 class SaludoControllerTest {
 
@@ -47,7 +47,7 @@ class SaludoControllerTest {
     @Test
     @DisplayName("POST /api/v1/saludos con nombre vacio debe responder 400")
     void postSaludo_nombreVacio_badRequest() throws Exception {
-        SaludoRequest request = new SaludoRequest("");
+        SaludoRequest request = new SaludoRequest();
 
         mockMvc.perform(post("/api/v1/saludos")
                         .contentType(APPLICATION_JSON)

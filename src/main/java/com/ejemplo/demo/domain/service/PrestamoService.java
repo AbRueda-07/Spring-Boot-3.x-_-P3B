@@ -1,6 +1,6 @@
 package com.ejemplo.demo.domain.service;
 
-import com.ejemplo.demo.api.dto.PrestamoResponse;
+import com.ejemplo.demo.generated.model.PrestamoResponse;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -11,9 +11,10 @@ import java.math.RoundingMode;
 public class PrestamoService {
 
     private static final int SCALE = 2;
-    private static final MathContext MC = new MathContext(15, RoundingMode.HALF_UP);
+    private static final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
 
     public PrestamoResponse simular(BigDecimal monto, BigDecimal tasaAnual, Integer meses) {
+
         if (monto == null || tasaAnual == null || meses == null) {
             throw new IllegalArgumentException("Todos los parametros son obligatorios");
         }
@@ -31,19 +32,22 @@ public class PrestamoService {
         }
 
         BigDecimal tasaMensual = tasaAnual
-                .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP)
-                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(12), MATH_CONTEXT)
+                .divide(BigDecimal.valueOf(100), MATH_CONTEXT);
 
-        double r = tasaMensual.doubleValue();
-        int n = meses;
-        double p = monto.doubleValue();
+        BigDecimal factor = BigDecimal.ONE.add(tasaMensual, MATH_CONTEXT).pow(meses, MATH_CONTEXT);
+        BigDecimal numerador = monto.multiply(tasaMensual, MATH_CONTEXT).multiply(factor, MATH_CONTEXT);
+        BigDecimal denominador = factor.subtract(BigDecimal.ONE, MATH_CONTEXT);
 
-        double cuota = p * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        BigDecimal cuotaMensual = numerador.divide(denominador, SCALE, RoundingMode.HALF_UP);
+        BigDecimal totalPagar = cuotaMensual.multiply(BigDecimal.valueOf(meses));
+        BigDecimal interesTotal = totalPagar.subtract(monto);
 
-        BigDecimal cuotaMensual = BigDecimal.valueOf(cuota).setScale(SCALE, RoundingMode.HALF_UP);
-        BigDecimal totalPagar = cuotaMensual.multiply(BigDecimal.valueOf(meses), MC).setScale(SCALE, RoundingMode.HALF_UP);
-        BigDecimal interesTotal = totalPagar.subtract(monto, MC).setScale(SCALE, RoundingMode.HALF_UP);
+        PrestamoResponse response = new PrestamoResponse();
+        response.setCuotaMensual(cuotaMensual);
+        response.setTotalPagar(totalPagar);
+        response.setInteresTotal(interesTotal);
 
-        return new PrestamoResponse(cuotaMensual, interesTotal, totalPagar);
+        return response;
     }
 }
